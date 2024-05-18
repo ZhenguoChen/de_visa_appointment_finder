@@ -11,16 +11,19 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 
 
 load_dotenv()
-URL = "https://visa.vfsglobal.com/ind/en/deu/login"
+# URL = "https://visa.vfsglobal.com/ind/en/deu/login"
+URL = "https://software.blsgermanyvisa.com/bls_appmnt/bls-appointment"
 VFS_USERNAME = os.environ['VFS_USERNAME']
 VFS_PASSWORD = os.environ['VFS_PASSWORD']
 
 SENDER_EMAIL = os.environ['SENDER_EMAIL']
 APP_PASSWORD = os.environ['APP_PASSWORD']
-RECEIVER_EMAIL = literal_eval(os.environ['RECEIVER_EMAIL'])
+# RECEIVER_EMAIL = literal_eval(os.environ['RECEIVER_EMAIL'])
+RECEIVER_EMAIL = os.environ['RECEIVER_EMAIL']
 
 
 def login():
@@ -65,7 +68,48 @@ def select_first_category():
     wait = WebDriverWait(driver, 20)
     sleep(2)
     wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="mat-select-value-1"]'))).click()
-    driver.find_elements_by_class_name('mat-option-text')[12].click()
+    driver.find_elements_by_class_name('//*[@id="valCenterLocationId"]/option[8]')[12].click()
+
+def click_ok():
+    wait = WebDriverWait(driver, 20)
+    sleep(2)
+    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="myModalJurisdiction"]/div/div/div[3]/button'))).click()
+    # driver.find_elements_by_xpath('//*[@id="myModalJurisdiction"]/div/div/div[3]/button')[0].click()
+
+def select_location():
+    wait = WebDriverWait(driver, 20)
+    sleep(2)
+    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="valCenterLocationId"]'))).click()
+    driver.find_elements_by_xpath('//*[@id="valCenterLocationId"]/option[8]')[0].click()
+
+
+def select_service_type():
+    wait = WebDriverWait(driver, 20)
+    sleep(2)
+    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="valCenterLocationTypeId"]'))).click()
+    driver.find_elements_by_xpath('//*[@id="valCenterLocationTypeId"]/option[2]')[0].click()
+
+
+def select_applicant_type():
+    wait = WebDriverWait(driver, 20)
+    sleep(2)
+    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="valAppointmentForMembers"]'))).click()
+    driver.find_elements_by_xpath('//*[@id="valAppointmentForMembers"]/option[2]')[0].click()
+
+
+def select_date():
+    wait = WebDriverWait(driver, 20)
+    sleep(2)
+    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="valAppointmentDate"]'))).click()
+    datepicker = driver.find_elements_by_class_name('datepicker-days')[0]
+    all_dates = datepicker.find_elements_by_class_name('day')
+    for date in all_dates:
+        if date.get_property("title") == "Available":
+            print("Found")
+            send_email(f"Go Bro {date.text}")
+            sleep(10*60)
+            return
+    print("No date available")
 
 
 def select_second_category(random=False):
@@ -146,10 +190,10 @@ def get_appointment_info():
 
 
 def send_email(text):
-    subject = 'DE VISA 🇩🇪 Appointment vacancy alert'
+    subject = 'Visa Slot Alert'
     content = [f'Appointment for VISA: {text}']
-    with yagmail.SMTP(SENDER_EMAIL, APP_PASSWORD) as yag:
-        yag.send(RECEIVER_EMAIL, subject, content)
+    with yagmail.SMTP("chen1078613992@gmail.com", "") as yag:
+        yag.send("yywang.amy@gmail.com", subject, content)
 
 
 def get_profile():
@@ -174,18 +218,30 @@ if __name__ == "__main__":
     while True:
         try:
             profile = get_profile()
-            driver = webdriver.Firefox(profile, options=options)
+            binary = FirefoxBinary('/home/zhenguo/Tutorials/de_visa_appointment_finder/geckodriver')
+            driver = webdriver.Firefox(profile, executable_path='/home/zhenguo/Tutorials/de_visa_appointment_finder/geckodriver', options=options)
             driver.get(URL)
 
-            login()
-            click_new_booking()
+            # login()
+            # click_new_booking()
+            select_location()
+            click_ok()
 
+            select_service_type()
+            # click_ok()
+
+            select_applicant_type()
+
+            select_date()
+            sleep(5*60)
+            # click_ok()
             # select first category and cycle the last two categories
-            select_first_category()
-            cycle_last_two_categories()
+            # select_first_category()
+            # cycle_last_two_categories()
 
         except Exception as e:
             print(f'error encountered: {e}')
+            raise
         finally:        
             driver.delete_all_cookies()
             sleep(2)
